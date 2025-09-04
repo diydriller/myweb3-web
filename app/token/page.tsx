@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MYERC20 } from "@/abis/MyERC20";
 import { ethers, Contract } from "ethers";
 import { ColumnDef } from "@tanstack/react-table";
@@ -17,21 +17,21 @@ const TokenPage = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [ethAmount, setEthAmount] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
-  const [provider, setProvider] = useState<Provider>();
-  const [erc20Token, setERC20Token] = useState<Contract>();
-  const [abi, setAbi] = useState();
+  const providerRef = useRef<Provider>(null);
+  const contractRef = useRef<Contract>(null);
+  const abiRef = useRef<any>(null);
   const [account, setAccount] = useState<string[]>([]);
 
   const startBlock = 71545565;
 
   useEffect(() => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    setProvider(provider);
     const signer = provider.getSigner();
     const abi = JSON.parse(JSON.stringify(MYERC20.abi));
-    setAbi(abi);
     const erc20Token = new ethers.Contract(ERC20_ADDRESS, abi, signer);
-    setERC20Token(erc20Token);
+    providerRef.current = provider;
+    contractRef.current = erc20Token;
+    abiRef.current = abi;
 
     const connectNetwork = async () => {
       await window.ethereum.request({
@@ -69,18 +69,20 @@ const TokenPage = () => {
   }, []);
 
   const handleViewHistory = async () => {
+    if (!contractRef.current || !providerRef.current || !abiRef.current) return;
+
     const clientsERC20: TransferLog[] = [];
-    const topic = [erc20Token!.filters.TokenBuy().topics].toString();
+    const topic = [contractRef.current.filters.TokenBuy().topics].toString();
     const filter = {
       address: ERC20_ADDRESS,
       fromBlock: startBlock,
       topics: [topic],
     };
 
-    const getlogs = await provider!.getLogs(filter);
-    const iface = new ethers.utils.Interface(abi);
+    const getlogs = await providerRef.current.getLogs(filter);
+    const iface = new ethers.utils.Interface(abiRef.current);
     for (const logs of getlogs) {
-      const receipt = await provider!.getTransactionReceipt(
+      const receipt = await providerRef.current.getTransactionReceipt(
         logs.transactionHash
       );
       receipt!.logs.forEach((log) => {
@@ -97,8 +99,6 @@ const TokenPage = () => {
             buyer: resObj.buyer,
             txhash: resObj.txhash,
           });
-        } else {
-          console.log(`this topic is not Transfer`);
         }
       });
     }
@@ -112,18 +112,20 @@ const TokenPage = () => {
   };
 
   const handleViewWithdrawHistory = async () => {
+    if (!contractRef.current || !providerRef.current || !abiRef.current) return;
+
     const clientsETH: WithdrawLog[] = [];
     console.log("pushETHwithdraw");
-    const topic = [erc20Token!.filters.WithdrawETH().topics].toString();
+    const topic = [contractRef.current.filters.WithdrawETH().topics].toString();
     const filter = {
       address: ERC20_ADDRESS,
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await provider!.getLogs(filter);
-    const iface = new ethers.utils.Interface(abi);
+    const getlogs = await providerRef.current.getLogs(filter);
+    const iface = new ethers.utils.Interface(abiRef.current);
     for (const logs of getlogs) {
-      const receipt = await provider!.getTransactionReceipt(
+      const receipt = await providerRef.current.getTransactionReceipt(
         logs.transactionHash
       );
       receipt!.logs.forEach((log) => {
@@ -151,25 +153,33 @@ const TokenPage = () => {
   };
 
   const handleCheckTokenAmount = async () => {
+    if (!contractRef.current || !providerRef.current) return;
+
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
-    const exchangeAmount = await erc20Token!.getExchangeRate(ether_amount);
+    const exchangeAmount = await contractRef.current.getExchangeRate(
+      ether_amount
+    );
     setTokenAmount(
       exchangeAmount.div(noExponents((10 ** 18).toString())).toString()
     );
   };
 
   const handleSendTransaction = async () => {
+    if (!contractRef.current) return;
+
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
     const hex_value = (Number(ethAmount) * 10 ** 18).toString(16);
-    const exchangeAmount = await erc20Token.getExchangeRate(ether_amount);
+    const exchangeAmount = await contractRef.current.getExchangeRate(
+      ether_amount
+    );
     setTokenAmount(
       exchangeAmount.div(noExponents((10 ** 18).toString())).toString()
     );
-    await erc20Token.estimateGas.buyToken({
+    await contractRef.current.estimateGas.buyToken({
       value: ether_amount,
     });
     const transferCalldata =
-      erc20Token.interface.encodeFunctionData("buyToken");
+      contractRef.current.interface.encodeFunctionData("buyToken");
     window.ethereum
       .request({
         method: "eth_sendTransaction",
@@ -187,8 +197,10 @@ const TokenPage = () => {
   };
 
   const handleWithdraw = async () => {
+    if (!contractRef.current) return;
+
     const withdrawCalldata =
-      erc20Token!.interface.encodeFunctionData("withdrawAll");
+      contractRef.current.interface.encodeFunctionData("withdrawAll");
     window.ethereum
       .request({
         method: "eth_sendTransaction",
