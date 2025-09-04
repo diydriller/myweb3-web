@@ -8,23 +8,26 @@ import { DataTable } from "@/components/DataTable";
 import { Provider } from "@ethersproject/providers";
 import { noExponents } from "@/utils/noExponent";
 import { ERC20_ADDRESS } from "@/abis/constant";
+import { checkERC20Owner } from "@/libs/web3";
 
 type TableData = TransferLog[] | WithdrawLog[];
 
 const TokenPage = () => {
-  const [data, setData] = useState<TableData>([]);
-  const [columns, setColumns] = useState<ColumnDef<any, any>[]>([]);
-  const [isOwner, setIsOwner] = useState(false);
-  const [ethAmount, setEthAmount] = useState("");
-  const [tokenAmount, setTokenAmount] = useState("");
   const providerRef = useRef<Provider>(null);
   const contractRef = useRef<Contract>(null);
   const abiRef = useRef<any>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [account, setAccount] = useState<string[]>([]);
+  const [ethAmount, setEthAmount] = useState("");
+  const [tokenAmount, setTokenAmount] = useState("");
+  const [data, setData] = useState<TableData>([]);
+  const [columns, setColumns] = useState<ColumnDef<TableData, any>[]>([]);
 
   const startBlock = 71545565;
 
   useEffect(() => {
+    if (!window.ethereum) return;
+
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     const abi = JSON.parse(JSON.stringify(MYERC20.abi));
@@ -33,42 +36,18 @@ const TokenPage = () => {
     contractRef.current = erc20Token;
     abiRef.current = abi;
 
-    const connectNetwork = async () => {
-      await window.ethereum.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: "0xc",
-            chainName: "Metadium Testnet",
-            nativeCurrency: {
-              name: "KAL",
-              symbol: "KAL",
-              decimals: 18,
-            },
-            rpcUrls: ["https://api.metadium.com/dev"],
-          },
-        ],
-      });
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xc" }],
-      });
-    };
-    connectNetwork();
-
-    const checkOwner = async () => {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+    (async () => {
+      if (!contractRef.current) return;
+      const result = await checkERC20Owner(contractRef.current);
+      if (!result) return;
+      const { accounts, isOwner } = result;
       setAccount(accounts);
-      const accountChecksum = ethers.utils.getAddress(accounts[0]);
-      const owner = await erc20Token.owner();
-      setIsOwner(owner == accountChecksum);
-    };
-    checkOwner();
+      setIsOwner(isOwner);
+    })();
   }, []);
 
   const handleViewHistory = async () => {
+    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current || !abiRef.current) return;
 
     const clientsERC20: TransferLog[] = [];
@@ -112,10 +91,10 @@ const TokenPage = () => {
   };
 
   const handleViewWithdrawHistory = async () => {
+    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current || !abiRef.current) return;
 
     const clientsETH: WithdrawLog[] = [];
-    console.log("pushETHwithdraw");
     const topic = [contractRef.current.filters.WithdrawETH().topics].toString();
     const filter = {
       address: ERC20_ADDRESS,
@@ -153,6 +132,7 @@ const TokenPage = () => {
   };
 
   const handleCheckTokenAmount = async () => {
+    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current) return;
 
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
@@ -165,6 +145,7 @@ const TokenPage = () => {
   };
 
   const handleSendTransaction = async () => {
+    if (!window.ethereum) return;
     if (!contractRef.current) return;
 
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
@@ -197,6 +178,7 @@ const TokenPage = () => {
   };
 
   const handleWithdraw = async () => {
+    if (!window.ethereum) return;
     if (!contractRef.current) return;
 
     const withdrawCalldata =
