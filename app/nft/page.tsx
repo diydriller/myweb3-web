@@ -9,6 +9,7 @@ import { ERC721_ADDRESS, ERC20_ADDRESS } from "@/abis/constant";
 import Image from "next/image";
 import { DataTable } from "@/components/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
+import { checkERC721Owner, connectNetwork } from "@/libs/web3";
 
 type Attribute = {
   trait_type: string;
@@ -22,6 +23,12 @@ type NftMetadata = {
 };
 
 export default function NFTPage() {
+  const providerRef = useRef<Provider>(null);
+  const signerRef = useRef<JsonRpcSigner>(null);
+  const erc20ContractRef = useRef<Contract>(null);
+  const erc721ContractRef = useRef<Contract>(null);
+  const erc20ABIRef = useRef<any>(null);
+  const erc721ABIRef = useRef<any>(null);
   const [data, setData] = useState<ShowNftLog[]>([]);
   const [columns, setColumns] = useState<ColumnDef<any, any>[]>([]);
   const [isOwner, setIsOwner] = useState(false);
@@ -32,73 +39,42 @@ export default function NFTPage() {
   const [metadata, setMetadata] = useState<NftMetadata | null>(null);
   const [tokenIdInput, setTokenIdInput] = useState<string>("");
 
-  const providerRef = useRef<Provider>(null);
-  const signerRef = useRef<JsonRpcSigner>(null);
-  const erc20ContractRef = useRef<Contract>(null);
-  const erc721ContractRef = useRef<Contract>(null);
-  const erc20ABIRef = useRef<any>(null);
-  const erc721ABIRef = useRef<any>(null);
-
   const startBlock = 71545565;
 
   useEffect(() => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    providerRef.current = provider;
-    const signer = provider.getSigner();
-    signerRef.current = signer;
-    const erc721ABI = JSON.parse(JSON.stringify(MYERC721.abi));
-    erc721ABIRef.current = erc721ABI;
-    const erc721Token = new ethers.Contract(ERC721_ADDRESS, erc721ABI, signer);
-    erc721ContractRef.current = erc721Token;
-    const erc20ABI = JSON.parse(JSON.stringify(MYERC20.abi));
-    erc20ABIRef.current = erc20ABI;
-    const erc20Token = new ethers.Contract(ERC20_ADDRESS, erc20ABI, signer);
-    erc20ContractRef.current = erc20Token;
+    (async () => {
+      if (!window.ethereum) return;
 
-    const connectNetwork = async () => {
-      await window.ethereum.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: "0xc",
-            chainName: "Metadium Testnet",
-            nativeCurrency: {
-              name: "KAL",
-              symbol: "KAL",
-              decimals: 18,
-            },
-            rpcUrls: ["https://api.metadium.com/dev"],
-          },
-        ],
-      });
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xc" }],
-      });
-    };
-    connectNetwork();
+      await connectNetwork();
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      providerRef.current = provider;
+      const signer = provider.getSigner();
+      signerRef.current = signer;
+      const erc721ABI = JSON.parse(JSON.stringify(MYERC721.abi));
+      erc721ABIRef.current = erc721ABI;
+      const erc721Token = new ethers.Contract(
+        ERC721_ADDRESS,
+        erc721ABI,
+        signer
+      );
+      erc721ContractRef.current = erc721Token;
+      const erc20ABI = JSON.parse(JSON.stringify(MYERC20.abi));
+      erc20ABIRef.current = erc20ABI;
+      const erc20Token = new ethers.Contract(ERC20_ADDRESS, erc20ABI, signer);
+      erc20ContractRef.current = erc20Token;
 
-    const getToken = async () => {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+      const result = await checkERC721Owner(erc721Token);
+      if (!result) return;
+      const { accounts, owner, isOwner, tokenId } = result;
+      setTokenId(tokenId.toNumber());
+      getTokenMetaData(tokenId.toNumber());
+      setIsOwner(isOwner);
       setAccount(accounts);
-
-      const tokenIdRes = await erc721Token.tokenId();
-
-      setTokenId(tokenIdRes.toNumber());
-      getTokenMetaData(tokenIdRes.toNumber());
-
-      const owner = await erc721Token.ownerOf(tokenIdRes);
       setOwner(owner);
-
       const nftPrice = await erc721Token.getNftPrice();
       const displayNftPrice = (nftPrice / 10 ** 18).toString();
       setPrice(displayNftPrice);
-      const accountChecksum = ethers.utils.getAddress(accounts[0]);
-      setIsOwner(owner == accountChecksum);
-    };
-    getToken();
+    })();
   }, []);
 
   const getTokenMetaData = async (tokenId: number) => {
@@ -164,11 +140,11 @@ export default function NFTPage() {
       .then((txHash) => console.log(txHash))
       .catch((error) => console.error(error));
 
-    const tokenIdRes = await erc721ContractRef.current.tokenId();
-    const owner = await erc721ContractRef.current.ownerOf(tokenIdRes);
+    const result = await checkERC721Owner(erc721ContractRef.current);
+    if (!result) return;
+    const { owner, isOwner } = result;
     setOwner(owner);
-    const accountChecksum = ethers.utils.getAddress(account![0]);
-    setIsOwner(owner == accountChecksum);
+    setIsOwner(isOwner);
   };
 
   const showEvent = async () => {

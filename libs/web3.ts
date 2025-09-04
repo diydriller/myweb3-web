@@ -36,7 +36,7 @@ export const connectNetwork = async () => {
 };
 
 export const checkERC20Owner = async (erc20Token: Contract) => {
-  if (!window.ethereum) return null;
+  if (!window.ethereum) return;
 
   const accounts = await window.ethereum.request({
     method: "eth_requestAccounts",
@@ -47,4 +47,20 @@ export const checkERC20Owner = async (erc20Token: Contract) => {
   const isOwner = owner === accountChecksum;
 
   return { accounts, isOwner };
+};
+
+export const checkERC721Owner = async (erc721Token: Contract) => {
+  if (!window.ethereum) return;
+
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+
+  const tokenId = await erc721Token.tokenId();
+
+  const accountChecksum = ethers.utils.getAddress(accounts[0]);
+  const owner = await erc721Token.ownerOf(tokenId);
+  const isOwner = owner === accountChecksum;
+
+  return { accounts, owner, isOwner, tokenId };
 };
