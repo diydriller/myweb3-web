@@ -9,3 +9,10 @@ interface WithdrawLog {
   withdrawer: string;
   txhash: string;
 }
+
+interface ShowNftLog {
+  from: string;
+  to: string;
+  tokenId: number;
+  txhash: string;
+}

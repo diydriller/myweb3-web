@@ -8,7 +8,7 @@ import { DataTable } from "@/components/DataTable";
 import { Provider } from "@ethersproject/providers";
 import { noExponents } from "@/utils/noExponent";
 import { ERC20_ADDRESS } from "@/abis/constant";
-import { checkERC20Owner } from "@/libs/web3";
+import { checkERC20Owner, connectNetwork } from "@/libs/web3";
 
 type TableData = TransferLog[] | WithdrawLog[];
 
@@ -26,18 +26,18 @@ const TokenPage = () => {
   const startBlock = 71545565;
 
   useEffect(() => {
-    if (!window.ethereum) return;
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const abi = JSON.parse(JSON.stringify(MYERC20.abi));
-    const erc20Token = new ethers.Contract(ERC20_ADDRESS, abi, signer);
-    providerRef.current = provider;
-    contractRef.current = erc20Token;
-    abiRef.current = abi;
-
     (async () => {
-      if (!contractRef.current) return;
+      if (!window.ethereum) return;
+
+      await connectNetwork();
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const abi = JSON.parse(JSON.stringify(MYERC20.abi));
+      const erc20Token = new ethers.Contract(ERC20_ADDRESS, abi, signer);
+      providerRef.current = provider;
+      contractRef.current = erc20Token;
+      abiRef.current = abi;
+
       const result = await checkERC20Owner(contractRef.current);
       if (!result) return;
       const { accounts, isOwner } = result;
