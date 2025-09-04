@@ -20,7 +20,7 @@ const TokenPage = () => {
   const [provider, setProvider] = useState<Provider>();
   const [erc20Token, setERC20Token] = useState<Contract>();
   const [abi, setAbi] = useState();
-  const [account, setAccount] = useState<string[]>();
+  const [account, setAccount] = useState<string[]>([]);
 
   const startBlock = 71545565;
 
@@ -175,7 +175,7 @@ const TokenPage = () => {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC20_ADDRESS,
             value: hex_value,
             data: transferCalldata,
@@ -194,7 +194,7 @@ const TokenPage = () => {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC20_ADDRESS,
             value: "0",
             data: withdrawCalldata,
