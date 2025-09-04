@@ -30,7 +30,7 @@ export default function NFTPage() {
   const erc20ABIRef = useRef<any>(null);
   const erc721ABIRef = useRef<any>(null);
   const [data, setData] = useState<ShowNftLog[]>([]);
-  const [columns, setColumns] = useState<ColumnDef<any, any>[]>([]);
+  const [columns, setColumns] = useState<ColumnDef<ShowNftLog, any>[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [owner, setOwner] = useState<string>("");
   const [price, setPrice] = useState<string>("");
