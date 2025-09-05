@@ -258,16 +258,18 @@ export default function NFTPage() {
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <div className="relative w-full h-150">
-            <Image
-              src={(metadata && metadata.image) || "/#"}
-              alt={(metadata && metadata.name) || "loading"}
-              fill
-              className="object-cover rounded-lg"
-              sizes="(max-width: 768px) 100vw, 400px"
-              priority
-            />
-          </div>
+          {metadata && (
+            <div className="relative w-full h-150">
+              <Image
+                src={metadata.image}
+                alt={metadata.name}
+                fill
+                className="object-cover rounded-lg"
+                sizes="(max-width: 768px) 100vw, 400px"
+                priority
+              />
+            </div>
+          )}
           <div className="mt-4 border rounded-lg">
             <button
               className="w-full px-4 py-2 text-left font-medium bg-gray-100 rounded-t-lg"
