@@ -33,9 +33,10 @@ export default function NFTPage() {
   const [owner, setOwner] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
-  const [account, setAccount] = useState<string[]>();
+  const [account, setAccount] = useState<string[]>([]);
   const [metadata, setMetadata] = useState<NftMetadata | null>(null);
   const [tokenIdInput, setTokenIdInput] = useState<string>("");
+  const [priceInput, setPriceInput] = useState<string>("");
 
   const startBlock = 71545565;
 
@@ -107,7 +108,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC20_ADDRESS,
             value: "0",
             data: approveCalldata,
@@ -131,7 +132,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC721_ADDRESS,
             value: "0",
             data: mintCalldata,
@@ -199,14 +200,14 @@ export default function NFTPage() {
 
     const setNftPriceCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("setNftPrice", [
-        (Number(price) * 10 ** 18).toString(),
+        (Number(priceInput) * 10 ** 18).toString(),
       ]);
     await ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC721_ADDRESS,
             value: "0",
             data: setNftPriceCalldata,
@@ -228,7 +229,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account![0],
+            from: account[0],
             to: ERC721_ADDRESS,
             value: "0",
             data: withdrawCalldata,
@@ -344,6 +345,7 @@ export default function NFTPage() {
               type="text"
               placeholder="NFT PRICE"
               className="py-2 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              onChange={(e) => setPriceInput(e.target.value)}
             />
           </div>
           {isOwner && (
