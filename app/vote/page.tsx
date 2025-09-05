@@ -27,7 +27,7 @@ export default function DaoVotePage() {
     useState<ShowProposalLog | null>(null);
   const [isExecutable, setIsExecutable] = useState(false);
   const startBlock = 71545565;
-  const ProposalState = {
+  const ProposalState: { [key: string]: ProposalStateValue } = {
     VOTING: { name: "투표 중", code: 0 },
     ACTIVATED: { name: "활성화", code: 1 },
     CANCELED: { name: "취소 됨", code: 2 },
@@ -37,13 +37,18 @@ export default function DaoVotePage() {
     EXPIRED: { name: "만료 됨", code: 6 },
     EXECUTED: { name: "실행 됨", code: 7 },
   } as const;
+  interface ProposalStateValue {
+    name: string;
+    code: number;
+  }
 
   useEffect(() => {
     (async () => {
-      if (!window.ethereum) return;
+      const { ethereum } = window as any;
+      if (!ethereum) return;
 
       await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(ethereum);
       providerRef.current = provider;
       const signer = provider.getSigner();
       signerRef.current = signer;
@@ -71,7 +76,6 @@ export default function DaoVotePage() {
   }, []);
 
   const getEventProposal = async () => {
-    if (!window.ethereum) return;
     if (!governorContractRef.current || !providerRef.current) return;
 
     const proposalInfo: ShowProposalLog[] = [];
@@ -120,7 +124,6 @@ export default function DaoVotePage() {
   };
 
   const getAllEventProposal = async () => {
-    if (!window.ethereum) return;
     if (!governorContractRef.current || !providerRef.current) return;
 
     const proposalInfo: ShowProposalLog[] = [];
@@ -165,7 +168,8 @@ export default function DaoVotePage() {
   };
 
   const agree = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!governorContractRef.current) return;
 
     const proposalInputParsed = ethers.utils.parseUnits(proposalId.trim(), 0);
@@ -174,7 +178,7 @@ export default function DaoVotePage() {
         proposalInputParsed,
         [1],
       ]);
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -186,12 +190,13 @@ export default function DaoVotePage() {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   const disagree = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!governorContractRef.current) return;
 
     const proposalInputParsed = ethers.utils.parseUnits(proposalId.trim(), 0);
@@ -200,7 +205,7 @@ export default function DaoVotePage() {
         proposalInputParsed,
         [0],
       ]);
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -212,12 +217,11 @@ export default function DaoVotePage() {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   const searchProposal = async () => {
-    if (!window.ethereum) return;
     if (!governorContractRef.current || !providerRef.current) return;
 
     const code = await governorContractRef.current.state(
@@ -225,8 +229,8 @@ export default function DaoVotePage() {
     );
     setIsExecutable(code == ProposalState.DECIDED_TO_EXECUTE.code);
     for (const state in ProposalState) {
-      if (state.code == code) {
-        setProposalState(state.name);
+      if (ProposalState[state].code == code) {
+        setProposalState(ProposalState[state].name);
         break;
       }
     }
@@ -274,7 +278,8 @@ export default function DaoVotePage() {
   };
 
   const executeProposal = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!governorContractRef.current) return;
     if (!selectedProposal) return;
 
@@ -296,7 +301,7 @@ export default function DaoVotePage() {
         calldatas,
         descriptionHash,
       ]);
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -308,8 +313,8 @@ export default function DaoVotePage() {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   return (

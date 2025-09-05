@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { tokenId: string } }
-) {
-  const { tokenId } = await params;
+  request: NextRequest,
+  context: { params: Promise<{ tokenId: string }> }
+): Promise<NextResponse> {
+  const { tokenId } = await context.params;
 
   try {
     const res = await fetch(
