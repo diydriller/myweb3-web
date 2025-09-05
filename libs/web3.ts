@@ -12,9 +12,10 @@ export const createERC20Contract = (
 };
 
 export const connectNetwork = async () => {
-  if (!window.ethereum) return;
+  const { ethereum } = window as any;
+  if (!ethereum) return;
 
-  await window.ethereum.request({
+  await ethereum.request({
     method: "wallet_addEthereumChain",
     params: [
       {
@@ -29,16 +30,17 @@ export const connectNetwork = async () => {
       },
     ],
   });
-  await window.ethereum.request({
+  await ethereum.request({
     method: "wallet_switchEthereumChain",
     params: [{ chainId: "0xc" }],
   });
 };
 
 export const checkERC20Owner = async (erc20Token: Contract) => {
-  if (!window.ethereum) return;
+  const { ethereum } = window as any;
+  if (!ethereum) return;
 
-  const accounts = await window.ethereum.request({
+  const accounts = await ethereum.request({
     method: "eth_requestAccounts",
   });
 
@@ -50,9 +52,10 @@ export const checkERC20Owner = async (erc20Token: Contract) => {
 };
 
 export const checkERC721Owner = async (erc721Token: Contract) => {
-  if (!window.ethereum) return;
+  const { ethereum } = window as any;
+  if (!ethereum) return;
 
-  const accounts = await window.ethereum.request({
+  const accounts = await ethereum.request({
     method: "eth_requestAccounts",
   });
 
@@ -66,9 +69,10 @@ export const checkERC721Owner = async (erc721Token: Contract) => {
 };
 
 export const checkGovernorOwner = async (governor: Contract) => {
-  if (!window.ethereum) return;
+  const { ethereum } = window as any;
+  if (!ethereum) return;
 
-  const accounts = await window.ethereum.request({
+  const accounts = await ethereum.request({
     method: "eth_requestAccounts",
   });
 

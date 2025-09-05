@@ -28,10 +28,11 @@ export default function DaoPage() {
 
   useEffect(() => {
     (async () => {
-      if (!window.ethereum) return;
+      const { ethereum } = window as any;
+      if (!ethereum) return;
 
       await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(ethereum);
       providerRef.current = provider;
       const signer = provider.getSigner();
       signerRef.current = signer;
@@ -59,7 +60,6 @@ export default function DaoPage() {
   }, []);
 
   const handleCheckVote = async () => {
-    if (!window.ethereum) return;
     if (!erc721ContractRef.current) return;
 
     const weight = await erc721ContractRef.current.getVotes(account);
@@ -67,7 +67,8 @@ export default function DaoPage() {
   };
 
   const handleProposal = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!governorContractRef.current || !erc1155ContractRef.current) return;
 
     const setURICalldata =
@@ -83,7 +84,7 @@ export default function DaoPage() {
         proposalInput,
       ]);
     try {
-      await window.ethereum.request({
+      await ethereum.request({
         method: "eth_sendTransaction",
         params: [
           {
@@ -100,7 +101,8 @@ export default function DaoPage() {
   };
 
   const handleDelegate = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!erc721ContractRef.current) return;
 
     const delegatingCall =
@@ -108,7 +110,7 @@ export default function DaoPage() {
         delegateAddress,
       ]);
     try {
-      await window.ethereum.request({
+      await ethereum.request({
         method: "eth_sendTransaction",
         params: [
           {

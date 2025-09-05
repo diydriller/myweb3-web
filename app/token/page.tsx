@@ -10,8 +10,6 @@ import { noExponents } from "@/utils/noExponent";
 import { ERC20_ADDRESS } from "@/abis/constant";
 import { checkERC20Owner, connectNetwork } from "@/libs/web3";
 
-type TableData = TransferLog[] | WithdrawLog[];
-
 const TokenPage = () => {
   const providerRef = useRef<Provider>(null);
   const contractRef = useRef<Contract>(null);
@@ -19,17 +17,18 @@ const TokenPage = () => {
   const [account, setAccount] = useState<string[]>([]);
   const [ethAmount, setEthAmount] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
-  const [data, setData] = useState<TableData>([]);
-  const [columns, setColumns] = useState<ColumnDef<TableData, any>[]>([]);
+  const [data, setData] = useState<any>([]);
+  const [columns, setColumns] = useState<ColumnDef<any, any>[]>([]);
 
   const startBlock = 71545565;
 
   useEffect(() => {
     (async () => {
-      if (!window.ethereum) return;
+      const { ethereum } = window as any;
+      if (!ethereum) return;
 
       await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(ethereum);
       const signer = provider.getSigner();
       const erc20Token = new ethers.Contract(
         ERC20_ADDRESS,
@@ -48,7 +47,6 @@ const TokenPage = () => {
   }, []);
 
   const handleViewHistory = async () => {
-    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current) return;
 
     const clientsERC20: TransferLog[] = [];
@@ -92,7 +90,6 @@ const TokenPage = () => {
   };
 
   const handleViewWithdrawHistory = async () => {
-    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current) return;
 
     const clientsETH: WithdrawLog[] = [];
@@ -133,7 +130,6 @@ const TokenPage = () => {
   };
 
   const handleCheckTokenAmount = async () => {
-    if (!window.ethereum) return;
     if (!contractRef.current || !providerRef.current) return;
 
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
@@ -146,7 +142,8 @@ const TokenPage = () => {
   };
 
   const handleSendTransaction = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!contractRef.current) return;
 
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
@@ -162,7 +159,7 @@ const TokenPage = () => {
     });
     const transferCalldata =
       contractRef.current.interface.encodeFunctionData("buyToken");
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -174,17 +171,18 @@ const TokenPage = () => {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   const handleWithdraw = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!contractRef.current) return;
 
     const withdrawCalldata =
       contractRef.current.interface.encodeFunctionData("withdrawAll");
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -196,8 +194,8 @@ const TokenPage = () => {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   const reset = () => {

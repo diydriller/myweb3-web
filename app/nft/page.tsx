@@ -41,10 +41,11 @@ export default function NFTPage() {
 
   useEffect(() => {
     (async () => {
-      if (!window.ethereum) return;
+      const { ethereum } = window as any;
+      if (!ethereum) return;
 
       await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(ethereum);
       providerRef.current = provider;
       const signer = provider.getSigner();
       signerRef.current = signer;
@@ -87,7 +88,8 @@ export default function NFTPage() {
   };
 
   const approveToken = () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!erc20ContractRef.current) return;
 
     const infinite = ethers.utils.parseUnits(
@@ -100,7 +102,7 @@ export default function NFTPage() {
         ERC721_ADDRESS,
         infinite,
       ]);
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -112,18 +114,19 @@ export default function NFTPage() {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
   };
 
   const buyNft = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!erc721ContractRef.current) return;
 
     await erc721ContractRef.current.estimateGas.mintWithToken();
     const mintCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("mintWithToken");
-    window.ethereum
+    ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -135,8 +138,8 @@ export default function NFTPage() {
           },
         ],
       })
-      .then((txHash) => console.log(txHash))
-      .catch((error) => console.error(error));
+      .then((txHash: any) => console.log(txHash))
+      .catch((error: any) => console.error(error));
 
     const result = await checkERC721Owner(erc721ContractRef.current);
     if (!result) return;
@@ -146,7 +149,6 @@ export default function NFTPage() {
   };
 
   const showEvent = async () => {
-    if (!window.ethereum) return;
     if (!providerRef.current || !erc721ContractRef.current) return;
 
     const clientsNFT: ShowNftLog[] = [];
@@ -191,14 +193,15 @@ export default function NFTPage() {
   };
 
   const setNftPrice = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!providerRef.current || !erc721ContractRef.current) return;
 
     const setNftPriceCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("setNftPrice", [
         (Number(price) * 10 ** 18).toString(),
       ]);
-    await window.ethereum
+    await ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -210,16 +213,17 @@ export default function NFTPage() {
           },
         ],
       })
-      .catch((error) => console.error(error));
+      .catch((error: any) => console.error(error));
   };
 
   const withdrawERC20 = async () => {
-    if (!window.ethereum) return;
+    const { ethereum } = window as any;
+    if (!ethereum) return;
     if (!providerRef.current || !erc721ContractRef.current) return;
 
     const withdrawCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("withdrawERC20");
-    await window.ethereum
+    await ethereum
       .request({
         method: "eth_sendTransaction",
         params: [
@@ -231,11 +235,10 @@ export default function NFTPage() {
           },
         ],
       })
-      .catch((error) => console.error(error));
+      .catch((error: any) => console.error(error));
   };
 
   const searchToken = async () => {
-    if (!window.ethereum) return;
     if (!providerRef.current || !erc721ContractRef.current) return;
 
     try {
