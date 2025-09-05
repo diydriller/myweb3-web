@@ -16,3 +16,13 @@ interface ShowNftLog {
   tokenId: number;
   txhash: string;
 }
+
+interface ShowProposalLog {
+  proposalId: string;
+  startBlock: number;
+  endBlock: number;
+  description: string;
+  targets: string;
+  calldatas: string;
+  txhash: string;
+}

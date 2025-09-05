@@ -27,8 +27,6 @@ export default function NFTPage() {
   const signerRef = useRef<JsonRpcSigner>(null);
   const erc20ContractRef = useRef<Contract>(null);
   const erc721ContractRef = useRef<Contract>(null);
-  const erc20ABIRef = useRef<any>(null);
-  const erc721ABIRef = useRef<any>(null);
   const [data, setData] = useState<ShowNftLog[]>([]);
   const [columns, setColumns] = useState<ColumnDef<ShowNftLog, any>[]>([]);
   const [isOwner, setIsOwner] = useState(false);
@@ -50,17 +48,17 @@ export default function NFTPage() {
       providerRef.current = provider;
       const signer = provider.getSigner();
       signerRef.current = signer;
-      const erc721ABI = JSON.parse(JSON.stringify(MYERC721.abi));
-      erc721ABIRef.current = erc721ABI;
       const erc721Token = new ethers.Contract(
         ERC721_ADDRESS,
-        erc721ABI,
+        MYERC721.abi,
         signer
       );
       erc721ContractRef.current = erc721Token;
-      const erc20ABI = JSON.parse(JSON.stringify(MYERC20.abi));
-      erc20ABIRef.current = erc20ABI;
-      const erc20Token = new ethers.Contract(ERC20_ADDRESS, erc20ABI, signer);
+      const erc20Token = new ethers.Contract(
+        ERC20_ADDRESS,
+        MYERC20.abi,
+        signer
+      );
       erc20ContractRef.current = erc20Token;
 
       const result = await checkERC721Owner(erc721Token);

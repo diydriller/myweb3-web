@@ -15,7 +15,6 @@ type TableData = TransferLog[] | WithdrawLog[];
 const TokenPage = () => {
   const providerRef = useRef<Provider>(null);
   const contractRef = useRef<Contract>(null);
-  const abiRef = useRef<any>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [account, setAccount] = useState<string[]>([]);
   const [ethAmount, setEthAmount] = useState("");
@@ -32,11 +31,13 @@ const TokenPage = () => {
       await connectNetwork();
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
-      const abi = JSON.parse(JSON.stringify(MYERC20.abi));
-      const erc20Token = new ethers.Contract(ERC20_ADDRESS, abi, signer);
+      const erc20Token = new ethers.Contract(
+        ERC20_ADDRESS,
+        MYERC20.abi,
+        signer
+      );
       providerRef.current = provider;
       contractRef.current = erc20Token;
-      abiRef.current = abi;
 
       const result = await checkERC20Owner(contractRef.current);
       if (!result) return;
@@ -48,7 +49,7 @@ const TokenPage = () => {
 
   const handleViewHistory = async () => {
     if (!window.ethereum) return;
-    if (!contractRef.current || !providerRef.current || !abiRef.current) return;
+    if (!contractRef.current || !providerRef.current) return;
 
     const clientsERC20: TransferLog[] = [];
     const topic = [contractRef.current.filters.TokenBuy().topics].toString();
@@ -59,7 +60,7 @@ const TokenPage = () => {
     };
 
     const getlogs = await providerRef.current.getLogs(filter);
-    const iface = new ethers.utils.Interface(abiRef.current);
+    const iface = new ethers.utils.Interface(MYERC20.abi);
     for (const logs of getlogs) {
       const receipt = await providerRef.current.getTransactionReceipt(
         logs.transactionHash
@@ -92,7 +93,7 @@ const TokenPage = () => {
 
   const handleViewWithdrawHistory = async () => {
     if (!window.ethereum) return;
-    if (!contractRef.current || !providerRef.current || !abiRef.current) return;
+    if (!contractRef.current || !providerRef.current) return;
 
     const clientsETH: WithdrawLog[] = [];
     const topic = [contractRef.current.filters.WithdrawETH().topics].toString();
@@ -102,7 +103,7 @@ const TokenPage = () => {
       topics: [topic],
     };
     const getlogs = await providerRef.current.getLogs(filter);
-    const iface = new ethers.utils.Interface(abiRef.current);
+    const iface = new ethers.utils.Interface(MYERC20.abi);
     for (const logs of getlogs) {
       const receipt = await providerRef.current.getTransactionReceipt(
         logs.transactionHash
@@ -195,7 +196,7 @@ const TokenPage = () => {
           },
         ],
       })
-      .then((txHash) => alert(txHash))
+      .then((txHash) => console.log(txHash))
       .catch((error) => console.error(error));
   };
 
