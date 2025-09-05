@@ -64,3 +64,17 @@ export const checkERC721Owner = async (erc721Token: Contract) => {
 
   return { accounts, owner, isOwner, tokenId };
 };
+
+export const checkGovernorOwner = async (governor: Contract) => {
+  if (!window.ethereum) return;
+
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+
+  const accountChecksum = ethers.utils.getAddress(accounts[0]);
+  const owner = await governor.owner();
+  const isOwner = owner === accountChecksum;
+
+  return { accounts, owner, isOwner };
+};
