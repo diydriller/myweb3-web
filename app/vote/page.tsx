@@ -23,8 +23,7 @@ export default function DaoVotePage() {
   const [quorum, setQuorum] = useState("");
   const [votingDelay, setVotingDelay] = useState("");
   const [votingPeriod, setVotingPeriod] = useState("");
-  const [selectedProposal, setSelectedProposal] =
-    useState<ShowProposalLog | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<ShowProposalLog>();
   const [isExecutable, setIsExecutable] = useState(false);
   const startBlock = 71545565;
   const ProposalState: { [key: string]: ProposalStateValue } = {
@@ -266,7 +265,9 @@ export default function DaoVotePage() {
         }
       });
     }
-    const find_data = data.find((d) => d.proposalId == searchProposalId);
+    const find_data = proposalInfo.find(
+      (d) => d.proposalId == searchProposalId
+    );
     setSelectedProposal(find_data);
     setColumns([
       { accessorKey: "proposalId", header: "proposalId" },
