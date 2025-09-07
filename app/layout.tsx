@@ -1,5 +1,6 @@
 "use client";
 
+import { WalletProvider } from "@/context/WalletContext";
 import "./globals.css";
 
 export default function RootLayout({
@@ -9,7 +10,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <WalletProvider>
+        <body>{children}</body>
+      </WalletProvider>
     </html>
   );
 }
