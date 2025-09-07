@@ -48,7 +48,7 @@ export const checkERC20Owner = async (erc20Token: Contract) => {
   const owner = await erc20Token.owner();
   const isOwner = owner === accountChecksum;
 
-  return { accounts, isOwner };
+  return { isOwner };
 };
 
 export const checkERC721Owner = async (erc721Token: Contract) => {
@@ -65,7 +65,7 @@ export const checkERC721Owner = async (erc721Token: Contract) => {
   const owner = await erc721Token.ownerOf(tokenId);
   const isOwner = owner === accountChecksum;
 
-  return { accounts, owner, isOwner, tokenId };
+  return { owner, isOwner, tokenId };
 };
 
 export const checkGovernorOwner = async (governor: Contract) => {
@@ -80,5 +80,5 @@ export const checkGovernorOwner = async (governor: Contract) => {
   const owner = await governor.owner();
   const isOwner = owner === accountChecksum;
 
-  return { accounts, owner, isOwner };
+  return { owner, isOwner };
 };

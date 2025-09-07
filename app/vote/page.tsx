@@ -3,19 +3,15 @@
 import { GOVERNOR_ADDRESS } from "@/abis/constant";
 import { MYGOVERNOR } from "@/abis/MyGovernor";
 import { DataTable } from "@/components/DataTable";
-import { checkGovernorOwner, connectNetwork } from "@/libs/web3";
-import { Provider, JsonRpcSigner } from "@ethersproject/providers";
+import { useWallet } from "@/context/WalletContext";
 import { ColumnDef } from "@tanstack/react-table";
 import { Contract, ethers } from "ethers";
 import { useEffect, useRef, useState } from "react";
 
 export default function DaoVotePage() {
-  const providerRef = useRef<Provider>(null);
-  const signerRef = useRef<JsonRpcSigner>(null);
   const governorContractRef = useRef<Contract>(null);
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<ColumnDef<any, any>[]>([]);
-  const [account, setAccount] = useState<string>("");
   const [proposalId, setProposalId] = useState("");
   const [searchProposalId, setSearchProposalId] = useState("");
   const [proposalState, setProposalState] = useState("");
@@ -41,27 +37,19 @@ export default function DaoVotePage() {
     code: number;
   }
 
+  const { account, signer, provider } = useWallet();
+
   useEffect(() => {
     (async () => {
       const { ethereum } = window as any;
-      if (!ethereum) return;
+      if (!ethereum || !signer || !provider) return;
 
-      await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      providerRef.current = provider;
-      const signer = provider.getSigner();
-      signerRef.current = signer;
       const governor = new ethers.Contract(
         GOVERNOR_ADDRESS,
         MYGOVERNOR.abi,
         signer
       );
       governorContractRef.current = governor;
-
-      const result = await checkGovernorOwner(governor);
-      if (!result) return;
-      const { accounts } = result;
-      setAccount(accounts[0]);
 
       const currentBlockNumber = await provider.getBlockNumber();
       setBlockNumber(currentBlockNumber.toString());
@@ -72,10 +60,10 @@ export default function DaoVotePage() {
       const votingPeriod = await governor.votingPeriod();
       setVotingPeriod(votingPeriod.toString());
     })();
-  }, []);
+  }, [signer, provider]);
 
   const getEventProposal = async () => {
-    if (!governorContractRef.current || !providerRef.current) return;
+    if (!governorContractRef.current || !provider) return;
 
     const proposalInfo: ShowProposalLog[] = [];
     const topic = [
@@ -86,10 +74,10 @@ export default function DaoVotePage() {
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     const iface = new ethers.utils.Interface(MYGOVERNOR.abi);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt.logs.forEach((log) => {
@@ -109,7 +97,7 @@ export default function DaoVotePage() {
       });
     }
 
-    const newBlockNumber = await providerRef.current.getBlockNumber();
+    const newBlockNumber = await provider.getBlockNumber();
     const filterdProposalInfo = proposalInfo.filter(
       (d) => d.endBlock > newBlockNumber
     );
@@ -123,7 +111,7 @@ export default function DaoVotePage() {
   };
 
   const getAllEventProposal = async () => {
-    if (!governorContractRef.current || !providerRef.current) return;
+    if (!governorContractRef.current || !provider) return;
 
     const proposalInfo: ShowProposalLog[] = [];
     const topic = [
@@ -134,10 +122,10 @@ export default function DaoVotePage() {
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     const iface = new ethers.utils.Interface(MYGOVERNOR.abi);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt.logs.forEach((log) => {
@@ -221,7 +209,7 @@ export default function DaoVotePage() {
   };
 
   const searchProposal = async () => {
-    if (!governorContractRef.current || !providerRef.current) return;
+    if (!governorContractRef.current || !provider) return;
 
     const code = await governorContractRef.current.state(
       searchProposalId.trim()
@@ -243,10 +231,10 @@ export default function DaoVotePage() {
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     const iface = new ethers.utils.Interface(MYGOVERNOR.abi);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt.logs.forEach((log) => {
@@ -347,7 +335,7 @@ export default function DaoVotePage() {
             <label className="block text-sm font-medium mb-1">지갑주소</label>
             <input
               type="text"
-              value={account}
+              value={account || ""}
               readOnly
               placeholder="ENTER TOKEN NAME"
               className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"

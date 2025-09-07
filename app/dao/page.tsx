@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Contract, ethers } from "ethers";
-import { Provider, JsonRpcSigner } from "@ethersproject/providers";
-
 import { MYGOVERNOR } from "@/abis/MyGovernor";
 import { MYERC721 } from "@/abis/MyERC721";
 import { MYERC1155 } from "@/abis/MyERC1155";
@@ -12,30 +10,24 @@ import {
   ERC721_ADDRESS,
   GOVERNOR_ADDRESS,
 } from "@/abis/constant";
-import { checkGovernorOwner, connectNetwork } from "@/libs/web3";
+import { useWallet } from "@/context/WalletContext";
 
 export default function DaoPage() {
-  const providerRef = useRef<Provider>(null);
-  const signerRef = useRef<JsonRpcSigner>(null);
   const governorContractRef = useRef<Contract>(null);
   const erc721ContractRef = useRef<Contract>(null);
   const erc1155ContractRef = useRef<Contract>(null);
-  const [account, setAccount] = useState<string>("");
   const [proposalInput, setProposalInput] = useState("");
   const [tokenURI, setTokenURI] = useState("11");
   const [delegateAddress, setDelegateAddress] = useState("");
   const [voteWeight, setVoteWeight] = useState<string>("");
 
+  const { account, signer } = useWallet();
+
   useEffect(() => {
     (async () => {
       const { ethereum } = window as any;
-      if (!ethereum) return;
+      if (!ethereum || !signer || !account) return;
 
-      await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      providerRef.current = provider;
-      const signer = provider.getSigner();
-      signerRef.current = signer;
       const governor = new ethers.Contract(
         GOVERNOR_ADDRESS,
         MYGOVERNOR.abi,
@@ -51,13 +43,9 @@ export default function DaoPage() {
       erc721ContractRef.current = erc721;
       erc1155ContractRef.current = erc1155;
 
-      const result = await checkGovernorOwner(governor);
-      if (!result) return;
-      const { accounts } = result;
-      setAccount(accounts[0]);
-      setDelegateAddress(accounts[0]);
+      setDelegateAddress(account);
     })();
-  }, []);
+  }, [signer, account]);
 
   const handleCheckVote = async () => {
     if (!erc721ContractRef.current) return;
@@ -139,7 +127,7 @@ export default function DaoPage() {
             <label className="block text-sm font-medium mb-1">지갑주소</label>
             <input
               type="text"
-              value={account}
+              value={account || ""}
               readOnly
               className="w-full border rounded-md px-3 py-2 bg-gray-100"
             />
