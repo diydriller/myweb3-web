@@ -82,3 +82,18 @@ export const checkGovernorOwner = async (governor: Contract) => {
 
   return { owner, isOwner };
 };
+
+export const checkMultisigWalletOwner = async (multisigWallet: Contract) => {
+  const { ethereum } = window as any;
+  if (!ethereum) return;
+
+  const accounts = await ethereum.request({
+    method: "eth_requestAccounts",
+  });
+
+  const accountChecksum = ethers.utils.getAddress(accounts[0]);
+  const owners = await multisigWallet.getOwners();
+
+  const isOwner = owners.find((owner: string) => owner == accountChecksum);
+  return { owners, isOwner };
+};

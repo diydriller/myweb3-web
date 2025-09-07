@@ -26,3 +26,10 @@ interface ShowProposalLog {
   calldatas: string;
   txhash: string;
 }
+
+interface ShowTransactionLog {
+  transactionId: string;
+  isConfirmed: string;
+  getConfirmations: string;
+  getConfirmationCount: string;
+}
