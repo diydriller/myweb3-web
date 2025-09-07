@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ethers, Contract } from "ethers";
-import { JsonRpcSigner, Provider } from "@ethersproject/providers";
 import { MYERC721 } from "@/abis/MyERC721";
 import { MYERC20 } from "@/abis/MyERC20";
 import { ERC721_ADDRESS, ERC20_ADDRESS } from "@/abis/constant";
 import Image from "next/image";
 import { DataTable } from "@/components/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { checkERC721Owner, connectNetwork } from "@/libs/web3";
+import { checkERC721Owner } from "@/libs/web3";
+import { useWallet } from "@/context/WalletContext";
 
 type Attribute = {
   trait_type: string;
@@ -23,8 +23,6 @@ type NftMetadata = {
 };
 
 export default function NFTPage() {
-  const providerRef = useRef<Provider>(null);
-  const signerRef = useRef<JsonRpcSigner>(null);
   const erc20ContractRef = useRef<Contract>(null);
   const erc721ContractRef = useRef<Contract>(null);
   const [data, setData] = useState<ShowNftLog[]>([]);
@@ -33,23 +31,19 @@ export default function NFTPage() {
   const [owner, setOwner] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
-  const [account, setAccount] = useState<string[]>([]);
   const [metadata, setMetadata] = useState<NftMetadata | null>(null);
   const [tokenIdInput, setTokenIdInput] = useState<string>("");
   const [priceInput, setPriceInput] = useState<string>("");
 
   const startBlock = 71545565;
 
+  const { account, signer, provider } = useWallet();
+
   useEffect(() => {
     (async () => {
       const { ethereum } = window as any;
-      if (!ethereum) return;
+      if (!ethereum || !signer) return;
 
-      await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      providerRef.current = provider;
-      const signer = provider.getSigner();
-      signerRef.current = signer;
       const erc721Token = new ethers.Contract(
         ERC721_ADDRESS,
         MYERC721.abi,
@@ -65,17 +59,16 @@ export default function NFTPage() {
 
       const result = await checkERC721Owner(erc721Token);
       if (!result) return;
-      const { accounts, owner, isOwner, tokenId } = result;
+      const { owner, isOwner, tokenId } = result;
       setTokenId(tokenId.toNumber());
       getTokenMetaData(tokenId.toNumber());
       setIsOwner(isOwner);
-      setAccount(accounts);
       setOwner(owner);
       const nftPrice = await erc721Token.getNftPrice();
       const displayNftPrice = (nftPrice / 10 ** 18).toString();
       setPrice(displayNftPrice);
     })();
-  }, []);
+  }, [signer]);
 
   const getTokenMetaData = async (tokenId: number) => {
     if (tokenId < 1 || tokenId > 100) {
@@ -108,7 +101,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC20_ADDRESS,
             value: "0",
             data: approveCalldata,
@@ -132,7 +125,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC721_ADDRESS,
             value: "0",
             data: mintCalldata,
@@ -150,7 +143,7 @@ export default function NFTPage() {
   };
 
   const showEvent = async () => {
-    if (!providerRef.current || !erc721ContractRef.current) return;
+    if (!provider || !erc721ContractRef.current) return;
 
     const clientsNFT: ShowNftLog[] = [];
     const topic = [
@@ -161,9 +154,9 @@ export default function NFTPage() {
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt.logs.forEach((log) => {
@@ -196,7 +189,7 @@ export default function NFTPage() {
   const setNftPrice = async () => {
     const { ethereum } = window as any;
     if (!ethereum) return;
-    if (!providerRef.current || !erc721ContractRef.current) return;
+    if (!erc721ContractRef.current) return;
 
     const setNftPriceCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("setNftPrice", [
@@ -207,7 +200,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC721_ADDRESS,
             value: "0",
             data: setNftPriceCalldata,
@@ -220,7 +213,7 @@ export default function NFTPage() {
   const withdrawERC20 = async () => {
     const { ethereum } = window as any;
     if (!ethereum) return;
-    if (!providerRef.current || !erc721ContractRef.current) return;
+    if (!erc721ContractRef.current) return;
 
     const withdrawCalldata =
       erc721ContractRef.current.interface.encodeFunctionData("withdrawERC20");
@@ -229,7 +222,7 @@ export default function NFTPage() {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC721_ADDRESS,
             value: "0",
             data: withdrawCalldata,
@@ -240,7 +233,7 @@ export default function NFTPage() {
   };
 
   const searchToken = async () => {
-    if (!providerRef.current || !erc721ContractRef.current) return;
+    if (!erc721ContractRef.current) return;
 
     try {
       const owner = await erc721ContractRef.current.ownerOf(

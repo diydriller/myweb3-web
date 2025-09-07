@@ -5,16 +5,14 @@ import { MYERC20 } from "@/abis/MyERC20";
 import { ethers, Contract } from "ethers";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/DataTable";
-import { Provider } from "@ethersproject/providers";
 import { noExponents } from "@/utils/noExponent";
 import { ERC20_ADDRESS } from "@/abis/constant";
 import { checkERC20Owner, connectNetwork } from "@/libs/web3";
+import { useWallet } from "@/context/WalletContext";
 
 const TokenPage = () => {
-  const providerRef = useRef<Provider>(null);
   const contractRef = useRef<Contract>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [account, setAccount] = useState<string[]>([]);
   const [ethAmount, setEthAmount] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
   const [data, setData] = useState<any>([]);
@@ -22,32 +20,30 @@ const TokenPage = () => {
 
   const startBlock = 71545565;
 
+  const { account, signer, provider } = useWallet();
+
   useEffect(() => {
     (async () => {
       const { ethereum } = window as any;
-      if (!ethereum) return;
+      if (!ethereum || !signer) return;
 
       await connectNetwork();
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      const signer = provider.getSigner();
       const erc20Token = new ethers.Contract(
         ERC20_ADDRESS,
         MYERC20.abi,
         signer
       );
-      providerRef.current = provider;
       contractRef.current = erc20Token;
 
       const result = await checkERC20Owner(contractRef.current);
       if (!result) return;
-      const { accounts, isOwner } = result;
-      setAccount(accounts);
+      const { isOwner } = result;
       setIsOwner(isOwner);
     })();
-  }, []);
+  }, [signer]);
 
   const handleViewHistory = async () => {
-    if (!contractRef.current || !providerRef.current) return;
+    if (!contractRef.current || !provider) return;
 
     const clientsERC20: TransferLog[] = [];
     const topic = [contractRef.current.filters.TokenBuy().topics].toString();
@@ -57,10 +53,10 @@ const TokenPage = () => {
       topics: [topic],
     };
 
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     const iface = new ethers.utils.Interface(MYERC20.abi);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt!.logs.forEach((log) => {
@@ -90,7 +86,7 @@ const TokenPage = () => {
   };
 
   const handleViewWithdrawHistory = async () => {
-    if (!contractRef.current || !providerRef.current) return;
+    if (!contractRef.current || !provider) return;
 
     const clientsETH: WithdrawLog[] = [];
     const topic = [contractRef.current.filters.WithdrawETH().topics].toString();
@@ -99,10 +95,10 @@ const TokenPage = () => {
       fromBlock: startBlock,
       topics: [topic],
     };
-    const getlogs = await providerRef.current.getLogs(filter);
+    const getlogs = await provider.getLogs(filter);
     const iface = new ethers.utils.Interface(MYERC20.abi);
     for (const logs of getlogs) {
-      const receipt = await providerRef.current.getTransactionReceipt(
+      const receipt = await provider.getTransactionReceipt(
         logs.transactionHash
       );
       receipt!.logs.forEach((log) => {
@@ -130,7 +126,7 @@ const TokenPage = () => {
   };
 
   const handleCheckTokenAmount = async () => {
-    if (!contractRef.current || !providerRef.current) return;
+    if (!contractRef.current) return;
 
     const ether_amount = noExponents((Number(ethAmount) * 10 ** 18).toString());
     const exchangeAmount = await contractRef.current.getExchangeRate(
@@ -164,7 +160,7 @@ const TokenPage = () => {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC20_ADDRESS,
             value: hex_value,
             data: transferCalldata,
@@ -187,7 +183,7 @@ const TokenPage = () => {
         method: "eth_sendTransaction",
         params: [
           {
-            from: account[0],
+            from: account,
             to: ERC20_ADDRESS,
             value: "0",
             data: withdrawCalldata,
@@ -226,7 +222,7 @@ const TokenPage = () => {
                 type="text"
                 id="addressFromWallet"
                 className="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                value={(account && account[0]) || ""}
+                value={account || ""}
                 readOnly
               />
             </div>
